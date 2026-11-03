@@ -1327,8 +1327,12 @@ pre {
     font-size: 1.4rem;
   }
 
+  .navbar .container {
+    padding: 0 16px;
+  }
+
   .nav-brand-name {
-    font-size: 1.6rem;
+    font-size: 1.35rem;
   }
 
   .playground-layout {
@@ -1373,6 +1377,10 @@ pre {
 }
 
 @media (max-width: 400px) {
+  .nav-brand-name {
+    font-size: 1.2rem;
+  }
+
   .kpi-bar {
     grid-template-columns: 1fr;
   }
