@@ -497,4 +497,38 @@ $ tail -f /var/log/mock-erp-bridge/connector.log | grep "TIMEOUT\\|RETRY"
       });
     });
   });
+
+  // ── Connector Dropdown Alignment & Touch Support ─────────
+  const dropdownTags = document.querySelectorAll('.connector-tag.has-dropdown');
+  dropdownTags.forEach(tag => {
+    const adjustPosition = () => {
+      const dropdown = tag.querySelector('.connector-dropdown');
+      if (!dropdown) return;
+      dropdown.style.left = '0';
+      dropdown.style.right = 'auto';
+      const rect = dropdown.getBoundingClientRect();
+      if (rect.right > window.innerWidth - 16) {
+        dropdown.style.left = 'auto';
+        dropdown.style.right = '0';
+      }
+    };
+    tag.addEventListener('mouseenter', adjustPosition);
+    tag.addEventListener('focusin', adjustPosition);
+    tag.addEventListener('click', (e) => {
+      if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        const isOpen = tag.classList.contains('dropdown-open');
+        dropdownTags.forEach(t => t.classList.remove('dropdown-open'));
+        if (!isOpen) {
+          tag.classList.add('dropdown-open');
+          adjustPosition();
+        }
+      }
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.connector-tag.has-dropdown')) {
+      dropdownTags.forEach(t => t.classList.remove('dropdown-open'));
+    }
+  });
 });
