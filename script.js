@@ -21,6 +21,14 @@ document.addEventListener('DOMContentLoaded', () => {
     setTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   });
 
+  // ── Language Switcher Persistence ─────────────────────
+  document.querySelectorAll('.lang-switch a').forEach(link => {
+    link.addEventListener('click', () => {
+      const targetLang = document.documentElement.lang === 'de' ? 'en' : 'de';
+      localStorage.setItem('preferred_lang', targetLang);
+    });
+  });
+
   // ── Mobile Navigation ─────────────────────────────────
   const hamburger = document.getElementById('nav-hamburger');
   const mobileNav = document.getElementById('mobile-nav');
@@ -409,7 +417,171 @@ $ tail -f /var/log/mock-erp-bridge/connector.log | grep "TIMEOUT\\|RETRY"
     }
   ];
 
-  // ── Playground: Wire scenario cards & tabs ────────────
+
+  // ── RCA Playground German Localized Data ──────────────
+  const scenariosDE = [
+    {
+      id: 'scenario-1',
+      triage: `
+        <div class="triage-step">
+          <span class="triage-time">T+00:00</span>
+          <div class="triage-body">
+            <h5>P1-Alarm ausgelöst <span class="status-pill isolated">P1-Ausnahme isoliert</span></h5>
+            <p>Automatisches Monitoring erkennt <code class="mono">HTTP 500</code> auf <code class="mono">POST /api/v2/mock-tax-engine/compute</code>. Deutscher B2B-Checkout-Pipeline für DACH-Enterprise-Accounts gestoppt.</p>
+          </div>
+        </div>
+        <div class="triage-step">
+          <span class="triage-time">T+04:00</span>
+          <div class="triage-body">
+            <h5>Erste Triage &amp; Payload-Erfassung</h5>
+            <p>Fehlerhafte Anfrage in Postman reproduziert. Fehlerhafte deutsche Postleitzone <code class="mono">"D-10115"</code> im Request-Body identifiziert, die eine <code class="mono">MockAddressSanitizer.parseZone:Line 88</code> Ausnahme auslöst.</p>
+          </div>
+        </div>
+        <div class="triage-step">
+          <span class="triage-time">T+12:00</span>
+          <div class="triage-body">
+            <h5>Datenbank-Auswirkungsanalyse</h5>
+            <p>Staging-DB abgefragt, um den Radius zu bestimmen: 47 betroffene deutsche Enterprise-Accounts mit veraltetem Postleitzahlen-Präfix über SAP- und Salesforce CPQ-Connectors.</p>
+          </div>
+        </div>
+        <div class="triage-step">
+          <span class="triage-time">T+28:00</span>
+          <div class="triage-body">
+            <h5>Sofortige Umgehungslösung bereitgestellt <span class="status-pill active">Workaround aktiv</span></h5>
+            <p>Connector-Mapping-Override angewendet: <code class="mono">"D-10115" → "10115"</code>. Umgehungslösung anhand von 5 Test-Accounts in der Staging-Umgebung validiert.</p>
+          </div>
+        </div>
+        <div class="triage-step">
+          <span class="triage-time">T+42:00</span>
+          <div class="triage-body">
+            <h5>Behebung bestätigt <span class="status-pill resolved">SLA eingehalten — Behoben</span></h5>
+            <p>Tier-3 Jira-Fehler erfasst und triagiert. Produktions-Fix bereitgestellt. Alle 47 Accounts verifiziert betriebsbereit. In 42 Minuten behoben (SLA-Ziel: 60 Min.).</p>
+          </div>
+        </div>`,
+      payload: scenarios[0].payload,
+      logs: scenarios[0].logs,
+      escalation: `
+        <div class="resolution-box">
+          <h5>✅ Zusammenfassung zu Engineering-Eskalation &amp; UAT</h5>
+          <ul>
+            <li><strong>Jira-Ticket:</strong> <code class="mono">MOCK-TAX-4821</code> — "MockAddressSanitizer schlägt bei legacy deutschem PLZ-Präfix fehl"</li>
+            <li><strong>Priorität:</strong> P1 → Tier-3 Engineering (Core Tax Engine Team)</li>
+            <li><strong>Ursache:</strong> Regex-Validierung in <code class="mono">MockAddressSanitizer.parseZone</code> berücksichtigte keine veralteten deutschen PLZ-Formate mit alphabetischen Präfixen (Vorkriegs-/Vorwende-Format)</li>
+            <li><strong>Sofortige Minderung:</strong> Connector-Mapping-Override bereitgestellt — entfernt nicht-numerische Präfixe vor der Validierung</li>
+            <li><strong>Dauerhafte Behebung:</strong> Postleitzahlen-Parser aktualisiert zur Normalisierung von DACH-Eingaben; 127 Testvektoren für DE/AT/CH-PLZ-Formate hinzugefügt</li>
+            <li><strong>UAT-Verifizierung:</strong> 47 betroffene Konten in Staging erneut getestet — alle Transaktionen laufen fehlerfrei</li>
+            <li><strong>Dokumentation:</strong> Confluence-Connector-Leitfaden mit DACH-PLZ-Normalisierungsregeln und Postman-Collection zur Partnervalidierung aktualisiert</li>
+            <li><strong>SLA-Ergebnis:</strong> In 42 Minuten behoben (Ziel: 60 Min.) — <span class="status-pill resolved">SLA eingehalten</span></li>
+          </ul>
+        </div>`
+    },
+    {
+      id: 'scenario-2',
+      triage: `
+        <div class="triage-step">
+          <span class="triage-time">T+00:00</span>
+          <div class="triage-body">
+            <h5>Monitoring-Alarm <span class="status-pill active">Workaround aktiv</span></h5>
+            <p><code class="mono">HTTP 504 Gateway Timeout</code> auf <code class="mono">POST /api/v2/mock-erp-bridge/ledger-sync</code>. Multi-Währungs-Rechnungssynchronisations-Pipeline blockiert. Doppelte Hauptbucheinträge im nachgelagerten Abrechnungssystem erkannt.</p>
+          </div>
+        </div>
+        <div class="triage-step">
+          <span class="triage-time">T+06:00</span>
+          <div class="triage-body">
+            <h5>Erste Untersuchung</h5>
+            <p>Connector-Request-Logs analysiert – fehlender <code class="mono">X-Mock-Idempotency-Token</code>-Header bei Wiederholungsspitzen im Netzwerk-Instabilitätsfenster (09:04–09:11 UTC) identifiziert.</p>
+          </div>
+        </div>
+        <div class="triage-step">
+          <span class="triage-time">T+18:00</span>
+          <div class="triage-body">
+            <h5>SQL-Forensik — Verwaiste Datensätze isoliert</h5>
+            <p>Gezielte SQL-Abfrage auf Tabelle <code class="mono">mock_erp_sync_ledger</code> ausgeführt. 23 verwaiste Duplikate mit <code class="mono">sync_status = 'RETRY_COLLISION'</code> und <code class="mono">retry_count > 3</code> gefunden.</p>
+          </div>
+        </div>
+        <div class="triage-step">
+          <span class="triage-time">T+32:00</span>
+          <div class="triage-body">
+            <h5>Linux/SSH-Log-Korrelation</h5>
+            <p>Per SSH auf Staging-Gateway-Node eingeloggt. Anwendungsprotokolle mit Netzwerk-Timeout-Spitzen korreliert – TCP-Keepalive-Fehlkonfiguration bestätigt, die vorzeitige Verbindungsabbrüche bei hohem Synchronisationsvolumen verursacht.</p>
+          </div>
+        </div>
+        <div class="triage-step">
+          <span class="triage-time">T+51:00</span>
+          <div class="triage-body">
+            <h5>Behebung &amp; UAT <span class="status-pill resolved">SLA eingehalten — Behoben</span></h5>
+            <p>Idempotenz-Token-Durchsetzung aktiviert. Verwaiste Datensätze bereinigt. UAT für 3 Multi-Währungs-Testrechnungen (EUR/GBP/CHF) erfolgreich. In 51 Minuten behoben.</p>
+          </div>
+        </div>`,
+      payload: scenarios[1].payload,
+      logs: scenarios[1].logs,
+      escalation: `
+        <div class="resolution-box">
+          <h5>✅ Zusammenfassung zu Engineering-Eskalation &amp; UAT</h5>
+          <ul>
+            <li><strong>Jira-Ticket:</strong> <code class="mono">MOCK-ERP-1192</code> — "Fehlende Idempotenz-Durchsetzung bei NetSuite Ledger-Sync Retries"</li>
+            <li><strong>Priorität:</strong> P2 → Tier-3 Engineering (ERP Connector Platform Team)</li>
+            <li><strong>Ursache:</strong> Connector-Retry-Handler erzeugte bzw. übermittelte keine deterministischen <code class="mono">X-Mock-Idempotency-Token</code>-Header bei Netzwerk-Wiederholungsspitzen, was zu doppelten Hauptbuchschreibvorgängen führte</li>
+            <li><strong>Sofortige Minderung:</strong> Manuelle Bereinigung von 23 verwaisten Datensätzen; temporäres Rate-Limit auf Wiederholungsrichtlinie (max 2 Retries, 5s Backoff)</li>
+            <li><strong>Dauerhafte Behebung:</strong> Deterministische Idempotenz-Token-Generierung auf Connector-Ebene erzwungen; Deadlock-Erkennung und automatischer Bereinigungsjob implementiert</li>
+            <li><strong>UAT-Verifizierung:</strong> 3 Multi-Währungs-Testrechnungen (EUR/GBP/CHF) erfolgreich über 2 Tochtergesellschaften mit erzwungener Retry-Simulation synchronisiert — null Duplikate</li>
+            <li><strong>Dokumentation:</strong> Confluence mit Best-Practice-Leitfaden für Idempotenz und NetSuite-Connector-Retry-Architekturdiagramm aktualisiert</li>
+            <li><strong>SLA-Ergebnis:</strong> In 51 Minuten behoben (Ziel: 60 Min.) — <span class="status-pill resolved">SLA eingehalten</span></li>
+          </ul>
+        </div>`
+    },
+    {
+      id: 'scenario-3',
+      triage: `
+        <div class="triage-step">
+          <span class="triage-time">T+00:00</span>
+          <div class="triage-body">
+            <h5>Sporadische Fehler erkannt <span class="status-pill isolated">P1-Ausnahme isoliert</span></h5>
+            <p>Europäische Händler melden sporadisch <code class="mono">HTTP 401</code> und <code class="mono">HTTP 422</code> auf <code class="mono">POST /api/v2/mock-commerce-webhook/ingest</code>. Steuer- und Bestell-Extraktoren auf Shopify- und WooCommerce-Storefronts fallen aus.</p>
+          </div>
+        </div>
+        <div class="triage-step">
+          <span class="triage-time">T+08:00</span>
+          <div class="triage-body">
+            <h5>OAuth-Token-Prüfung</h5>
+            <p>Abgelaufenes OAuth-Bearer-Token in Webhook-Headern entdeckt – automatisierter Token-Rotationsdienst wies Zeitversatz (Clock-Drift) zur Zeitzone der Händler-Storefront auf.</p>
+          </div>
+        </div>
+        <div class="triage-step">
+          <span class="triage-time">T+15:00</span>
+          <div class="triage-body">
+            <h5>Schema-Validierungsanomalie</h5>
+            <p>Parallele Untersuchung: <code class="mono">HTTP 422</code>-Fehler auf fehlerhaftes MwSt-Befreiungs-Flag zurückgeführt – <code class="mono">"eu_reverse_charge": "true_string"</code> wurde als String statt als Boolean <code class="mono">true</code> übertragen.</p>
+          </div>
+        </div>
+        <div class="triage-step">
+          <span class="triage-time">T+35:00</span>
+          <div class="triage-body">
+            <h5>Fixes bereitgestellt &amp; validiert <span class="status-pill resolved">SLA eingehalten — Behoben</span></h5>
+            <p>Token-Rotationsdienst gepatcht. Schema-Validierungsregel aktualisiert. Postman-Regressionssuite erweitert. Kunden-Enablement-Webinar terminiert, um Konfigurationsdrift zu verhindern.</p>
+          </div>
+        </div>`,
+      payload: scenarios[2].payload,
+      logs: scenarios[2].logs,
+      escalation: `
+        <div class="resolution-box">
+          <h5>✅ Zusammenfassung zu Engineering-Eskalation &amp; UAT</h5>
+          <ul>
+            <li><strong>Jira-Ticket:</strong> <code class="mono">MOCK-COMM-2847</code> — "OAuth Clock-Drift + Schema-Koerzionsfehler bei EU-Commerce-Webhooks"</li>
+            <li><strong>Priorität:</strong> P1 → Tier-3 Engineering (Commerce Integrations Team)</li>
+            <li><strong>Ursache (Auth):</strong> Token-Rotations-Cronjob auf dem Auth-Dienst wies 47 Sekunden Zeitversatz aufgrund von NTP-Fehlkonfiguration auf, was eine Token-Gültigkeitslücke verursachte</li>
+            <li><strong>Ursache (Schema):</strong> WooCommerce-Plugin v3.2.1 serialisierte Boolean-Felder als Strings — keine serverseitige Typ-Koerzion in der Webhook-Ingestion-Schicht</li>
+            <li><strong>Sofortige Minderung:</strong> OAuth-Tokens für alle 12 betroffenen Händler forciert erneuert; serverseitige Boolean-Koerzion für bekannte String-Boolean-Felder hinzugefügt</li>
+            <li><strong>Dauerhafte Behebung:</strong> NTP-Synchronisation auf Auth-Service-Knoten gehärtet; strikte Schemavalidierung mit toleranter Koerzion und detaillierten Fehlerantworten</li>
+            <li><strong>UAT-Verifizierung:</strong> Simulierter Token-Ablauf- und Erneuerungszyklus über 5 Shopify- und 3 WooCommerce-Testshops — null Ausfälle</li>
+            <li><strong>Kunden-Enablement:</strong> Partner-Webinar zur korrekten Webhook-Payload-Konfiguration veranstaltet; aktualisierter Integrationsleitfaden mit Feldtyp-Referenztabelle veröffentlicht</li>
+            <li><strong>SLA-Ergebnis:</strong> In 35 Minuten behoben (Ziel: 60 Min.) — <span class="status-pill resolved">SLA eingehalten</span></li>
+          </ul>
+        </div>`
+    }
+  ];
+
+    // ── Playground: Wire scenario cards & tabs ────────────
   let activeScenario = 0;
   let activeTab = 0;
 
@@ -418,27 +590,42 @@ $ tail -f /var/log/mock-erp-bridge/connector.log | grep "TIMEOUT\\|RETRY"
   const diagPanes = document.querySelectorAll('.diag-pane');
 
   function renderPlayground() {
-    const s = scenarios[activeScenario];
+    const isDE = document.documentElement.lang === 'de';
+    const activeScenarios = isDE ? scenariosDE : scenarios;
+    const s = activeScenarios[activeScenario];
+
     // Triage tab
     diagPanes[0].innerHTML = s.triage;
+
     // Payload tab
+    const payloadIntro = isDE
+      ? 'Mock-cURL-Anfrage und Fehlerantwort-Payload zur diagnostischen Reproduktion:'
+      : 'Mock cURL request and error response payload for diagnostic reproduction:';
+    const copyBtnText = isDE ? 'cURL kopieren' : 'Copy cURL';
+    const errorHeading = isDE ? 'Fehlerantwort:' : 'Error Response:';
+
     diagPanes[1].innerHTML = `
-      <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:12px;">Mock cURL request and error response payload for diagnostic reproduction:</p>
+      <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:12px;">${payloadIntro}</p>
       <div class="code-block">
         <button class="copy-btn" onclick="copyToClipboard(this)" data-copy="${encodeURIComponent(s.payload.curl)}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copy cURL
+          ${copyBtnText}
         </button>
         <pre>${s.payload.curl}</pre>
       </div>
-      <h5 style="font-size:.82rem;font-weight:700;margin:16px 0 8px;">Error Response:</h5>
+      <h5 style="font-size:.82rem;font-weight:700;margin:16px 0 8px;">${errorHeading}</h5>
       <div class="code-block"><pre>{
   ${s.payload.json}
 }</pre></div>`;
+
     // Logs tab
+    const logsIntro = isDE
+      ? 'Simulierte SQL-Untersuchungsabfrage und Anwendungslog-Trace:'
+      : 'Simulated SQL investigation query and application log trace:';
     diagPanes[2].innerHTML = `
-      <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:12px;">Simulated SQL investigation query and application log trace:</p>
+      <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:12px;">${logsIntro}</p>
       <div class="code-block"><pre>${s.logs}</pre></div>`;
+
     // Escalation tab
     diagPanes[3].innerHTML = s.escalation;
 
@@ -460,8 +647,11 @@ $ tail -f /var/log/mock-erp-bridge/connector.log | grep "TIMEOUT\\|RETRY"
   // ── Copy to clipboard + Toast ─────────────────────────
   window.copyToClipboard = function(btn) {
     const text = decodeURIComponent(btn.getAttribute('data-copy'));
+    const successMsg = document.documentElement.lang === 'de'
+      ? 'Mock-cURL in die Zwischenablage kopiert'
+      : 'Mock cURL copied to clipboard';
     navigator.clipboard.writeText(text).then(() => {
-      showToast('Mock cURL copied to clipboard');
+      showToast(successMsg);
     }).catch(() => {
       // Fallback
       const ta = document.createElement('textarea');
@@ -469,7 +659,7 @@ $ tail -f /var/log/mock-erp-bridge/connector.log | grep "TIMEOUT\\|RETRY"
       document.body.appendChild(ta); ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      showToast('Mock cURL copied to clipboard');
+      showToast(successMsg);
     });
   };
 
