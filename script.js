@@ -72,28 +72,28 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="triage-time">T+00:00</span>
           <div class="triage-body">
             <h5>P1 Alert Triggered <span class="status-pill isolated">P1 Exception Isolated</span></h5>
-            <p>Automated monitoring detects <code class="mono">HTTP 500</code> on <code class="mono">POST /api/v2/mock-tax-engine/compute</code>. German B2B checkout pipeline halted for DACH enterprise accounts.</p>
+            <p>Automated monitoring detects <code class="mono">HTTP 500</code> on <code class="mono">POST /api/v2/mock-tax-engine/compute</code>. B2B checkout pipeline halted for US &amp; Canada enterprise accounts.</p>
           </div>
         </div>
         <div class="triage-step">
           <span class="triage-time">T+04:00</span>
           <div class="triage-body">
-            <h5>Initial Triage & Payload Capture</h5>
-            <p>Reproduced failing request in Postman. Identified malformed German postal zone <code class="mono">"D-10115"</code> in request body triggering <code class="mono">MockAddressSanitizer.parseZone:Line 88</code> exception.</p>
+            <h5>Initial Triage &amp; Payload Capture</h5>
+            <p>Reproduced failing request in Postman. Identified malformed postal zone <code class="mono">"K1A-0B1"</code> in request body triggering <code class="mono">MockAddressSanitizer.parseZone:Line 88</code> exception.</p>
           </div>
         </div>
         <div class="triage-step">
           <span class="triage-time">T+12:00</span>
           <div class="triage-body">
             <h5>Database Impact Assessment</h5>
-            <p>Queried staging DB to scope blast radius: 47 affected German enterprise accounts with legacy postal prefix format across SAP and Salesforce CPQ connectors.</p>
+            <p>Queried staging DB to scope blast radius: 47 affected enterprise accounts with Canadian postal code format across SAP and Salesforce CPQ connectors.</p>
           </div>
         </div>
         <div class="triage-step">
           <span class="triage-time">T+28:00</span>
           <div class="triage-body">
             <h5>Immediate Workaround Deployed <span class="status-pill active">Mitigation Active</span></h5>
-            <p>Applied connector mapping override: <code class="mono">"D-10115" → "10115"</code>. Validated workaround against 5 test accounts in staging environment.</p>
+            <p>Applied connector mapping override: <code class="mono">"K1A-0B1" → "K1A 0B1"</code>. Validated workaround against 5 test accounts in staging environment.</p>
           </div>
         </div>
         <div class="triage-step">
@@ -107,40 +107,40 @@ document.addEventListener('DOMContentLoaded', () => {
         curl: `curl -X POST https://staging.mock-tax-engine.example/api/v2/mock-tax-engine/compute \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer MOCK_JWT_TOKEN_xxxx" \\
-  -H "X-Mock-Correlation-ID: corr-de-b2b-20250315-001" \\
+  -H "X-Mock-Correlation-ID: corr-na-b2b-20250315-001" \\
   -d '{
-    "transaction_id": "TXN-DE-2025-88421",
+    "transaction_id": "TXN-NA-2025-88421",
     "connector_source": "salesforce-cpq",
     "erp_target": "sap-s4hana",
-    "country_iso": "DE",
-    "postal_zone": "D-10115",
+    "country_iso": "CA",
+    "postal_zone": "K1A-0B1",
     "line_items": [
       {
         "sku": "MOCK-IND-VALVE-7700",
         "description": "Industrial Pressure Valve Unit",
         "quantity": 250,
-        "unit_price_eur": 84.50,
-        "vat_rate_pct": 19.0,
+        "unit_price_usd": 84.50,
+        "tax_rate_pct": 5.0,
         "tax_category": "STANDARD"
       }
     ],
-    "buyer_vat_id": "DE000000000",
-    "seller_vat_id": "DE111111111"
+    "buyer_tax_id": "BN000000000",
+    "seller_tax_id": "EIN111111111"
   }'`,
         json: `<span class="json-key">"error"</span>: {
   <span class="json-key">"code"</span>: <span class="json-number">500</span>,
   <span class="json-key">"type"</span>: <span class="json-string">"POSTAL_ZONE_PARSE_EXCEPTION"</span>,
-  <span class="json-key">"message"</span>: <span class="json-error">"Failed to parse postal_zone 'D-10115': unexpected alphanumeric prefix in MockAddressSanitizer.parseZone at Line 88"</span>,
-  <span class="json-key">"correlation_id"</span>: <span class="json-string">"corr-de-b2b-20250315-001"</span>,
+  <span class="json-key">"message"</span>: <span class="json-error">"Failed to parse postal_zone 'K1A-0B1': unexpected alphanumeric format in MockAddressSanitizer.parseZone at Line 88"</span>,
+  <span class="json-key">"correlation_id"</span>: <span class="json-string">"corr-na-b2b-20250315-001"</span>,
   <span class="json-key">"connector_source"</span>: <span class="json-string">"salesforce-cpq"</span>,
   <span class="json-key">"erp_target"</span>: <span class="json-string">"sap-s4hana"</span>,
   <span class="json-key">"affected_field"</span>: <span class="json-string">"postal_zone"</span>,
   <span class="json-key">"expected_format"</span>: <span class="json-string">"^[0-9]{5}$"</span>,
-  <span class="json-key">"received_value"</span>: <span class="json-error">"D-10115"</span>,
-  <span class="json-key">"suggested_fix"</span>: <span class="json-string">"Strip non-numeric prefix; submit '10115'"</span>
+  <span class="json-key">"received_value"</span>: <span class="json-error">"K1A-0B1"</span>,
+  <span class="json-key">"suggested_fix"</span>: <span class="json-string">"Normalize postal_zone for CA destination; accept alphanumeric A1A 1A1 schema"</span>
 }`
       },
-      logs: `<span class="sql-keyword">-- Mock SQL Investigation: Identify affected German enterprise accounts</span>
+      logs: `<span class="sql-keyword">-- Mock SQL Investigation: Identify affected enterprise accounts</span>
 <span class="sql-keyword">SELECT</span>
     account_id,
     company_name,
@@ -149,8 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
     last_sync_status,
     last_error_ts
 <span class="sql-keyword">FROM</span> <span class="sql-table">mock_enterprise_accounts</span>
-<span class="sql-keyword">WHERE</span> country_iso = <span class="json-string">'DE'</span>
-  <span class="sql-keyword">AND</span> postal_zone <span class="sql-keyword">LIKE</span> <span class="json-string">'D-%'</span>
+<span class="sql-keyword">WHERE</span> country_iso = <span class="json-string">'CA'</span>
+  <span class="sql-keyword">AND</span> postal_zone <span class="sql-keyword">LIKE</span> <span class="json-string">'K1A%'</span>
   <span class="sql-keyword">AND</span> last_sync_status = <span class="json-string">'FAILED'</span>
 <span class="sql-keyword">ORDER BY</span> last_error_ts <span class="sql-keyword">DESC</span>
 <span class="sql-keyword">LIMIT</span> <span class="json-number">100</span>;
@@ -160,22 +160,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <span class="sql-keyword">-- Simulated Application Log Trace</span>
 [2025-03-15T09:12:44.331Z] <span class="json-error">ERROR</span> mock-tax-engine | MockAddressSanitizer.parseZone:88
-  → Input: "D-10115" | Expected: numeric-only (regex ^[0-9]{5}$)
+  → Input: "K1A-0B1" | Expected: numeric ZIP (regex ^[0-9]{5}$)
   → Stack: MockPostalValidator → MockTaxRateResolver → MockConnectorBridge
 [2025-03-15T09:12:44.335Z] <span class="json-error">ERROR</span> mock-tax-engine | Request aborted
-  → correlation_id: corr-de-b2b-20250315-001
+  → correlation_id: corr-na-b2b-20250315-001
   → HTTP 500 returned to upstream connector`,
       escalation: `
         <div class="resolution-box">
-          <h5>✅ Engineering Escalation & UAT Summary</h5>
+          <h5>✅ Engineering Escalation &amp; UAT Summary</h5>
           <ul>
-            <li><strong>Jira Defect:</strong> <code class="mono">MOCK-TAX-4821</code> — "MockAddressSanitizer fails on legacy DE postal prefix format"</li>
+            <li><strong>Jira Defect:</strong> <code class="mono">MOCK-TAX-4821</code> — "MockAddressSanitizer fails on Canadian alphanumeric postal format during checkout"</li>
             <li><strong>Priority:</strong> P1 → Tier-3 Engineering (Core Tax Engine Team)</li>
-            <li><strong>Root Cause:</strong> Regex validation in <code class="mono">MockAddressSanitizer.parseZone</code> did not account for legacy German postal codes containing alphabetic prefixes (pre-reunification format)</li>
-            <li><strong>Immediate Mitigation:</strong> Connector mapping override deployed — strips non-numeric prefix before validation</li>
-            <li><strong>Permanent Fix:</strong> Updated postal zone parser to normalize DACH-region inputs; added 127 test vectors for DE/AT/CH postal formats</li>
+            <li><strong>Root Cause:</strong> Regex validation in <code class="mono">MockAddressSanitizer.parseZone</code> strictly enforced US 5-digit numeric ZIP regex and rejected Canadian alphanumeric postal codes during checkout</li>
+            <li><strong>Immediate Mitigation:</strong> Connector mapping override deployed — normalizes Canadian destination postal formats before validation</li>
+            <li><strong>Permanent Fix:</strong> Updated postal zone parser to support US ZIP (+4) and Canadian alphanumeric postal codes; added 127 test vectors for North American postal formats</li>
             <li><strong>UAT Verification:</strong> 47 affected accounts retested in staging — all transactions processing successfully</li>
-            <li><strong>Documentation:</strong> Updated Confluence connector guide with DACH postal format normalization rules and Postman collection for partner validation</li>
+            <li><strong>Documentation:</strong> Updated Confluence connector guide with US/Canada postal validation rules and Postman collection for partner validation</li>
             <li><strong>SLA Outcome:</strong> Resolved in 42 minutes (target: 60 min) — <span class="status-pill resolved">SLA Met</span></li>
           </ul>
         </div>`
@@ -427,28 +427,28 @@ $ tail -f /var/log/mock-erp-bridge/connector.log | grep "TIMEOUT\\|RETRY"
           <span class="triage-time">T+00:00</span>
           <div class="triage-body">
             <h5>P1-Alarm ausgelöst <span class="status-pill isolated">P1-Ausnahme isoliert</span></h5>
-            <p>Automatisches Monitoring erkennt <code class="mono">HTTP 500</code> auf <code class="mono">POST /api/v2/mock-tax-engine/compute</code>. Deutscher B2B-Checkout-Pipeline für DACH-Enterprise-Accounts gestoppt.</p>
+            <p>Automatisches Monitoring erkennt <code class="mono">HTTP 500</code> auf <code class="mono">POST /api/v2/mock-tax-engine/compute</code>. B2B-Checkout-Pipeline für US- und Kanada-Enterprise-Accounts gestoppt.</p>
           </div>
         </div>
         <div class="triage-step">
           <span class="triage-time">T+04:00</span>
           <div class="triage-body">
             <h5>Erste Triage &amp; Payload-Erfassung</h5>
-            <p>Fehlerhafte Anfrage in Postman reproduziert. Fehlerhafte deutsche Postleitzone <code class="mono">"D-10115"</code> im Request-Body identifiziert, die eine <code class="mono">MockAddressSanitizer.parseZone:Line 88</code> Ausnahme auslöst.</p>
+            <p>Fehlerhafte Anfrage in Postman reproduziert. Fehlerhafte Postleitzone <code class="mono">"K1A-0B1"</code> im Request-Body identifiziert, die eine <code class="mono">MockAddressSanitizer.parseZone:Line 88</code> Ausnahme auslöst.</p>
           </div>
         </div>
         <div class="triage-step">
           <span class="triage-time">T+12:00</span>
           <div class="triage-body">
             <h5>Datenbank-Auswirkungsanalyse</h5>
-            <p>Staging-DB abgefragt, um den Radius zu bestimmen: 47 betroffene deutsche Enterprise-Accounts mit veraltetem Postleitzahlen-Präfix über SAP- und Salesforce CPQ-Connectors.</p>
+            <p>Staging-DB abgefragt, um den Radius zu bestimmen: 47 betroffene Enterprise-Accounts mit kanadischem Postleitzahlenformat über SAP- und Salesforce CPQ-Connectors.</p>
           </div>
         </div>
         <div class="triage-step">
           <span class="triage-time">T+28:00</span>
           <div class="triage-body">
             <h5>Sofortige Umgehungslösung bereitgestellt <span class="status-pill active">Workaround aktiv</span></h5>
-            <p>Connector-Mapping-Override angewendet: <code class="mono">"D-10115" → "10115"</code>. Umgehungslösung anhand von 5 Test-Accounts in der Staging-Umgebung validiert.</p>
+            <p>Connector-Mapping-Override angewendet: <code class="mono">"K1A-0B1" → "K1A 0B1"</code>. Umgehungslösung anhand von 5 Test-Accounts in der Staging-Umgebung validiert.</p>
           </div>
         </div>
         <div class="triage-step">
@@ -464,13 +464,13 @@ $ tail -f /var/log/mock-erp-bridge/connector.log | grep "TIMEOUT\\|RETRY"
         <div class="resolution-box">
           <h5>✅ Zusammenfassung zu Engineering-Eskalation &amp; UAT</h5>
           <ul>
-            <li><strong>Jira-Ticket:</strong> <code class="mono">MOCK-TAX-4821</code> — "MockAddressSanitizer schlägt bei legacy deutschem PLZ-Präfix fehl"</li>
+            <li><strong>Jira-Ticket:</strong> <code class="mono">MOCK-TAX-4821</code> — "MockAddressSanitizer schlägt bei kanadischem alphanumerischen Postleitzahlenformat beim Checkout fehl"</li>
             <li><strong>Priorität:</strong> P1 → Tier-3 Engineering (Core Tax Engine Team)</li>
-            <li><strong>Ursache:</strong> Regex-Validierung in <code class="mono">MockAddressSanitizer.parseZone</code> berücksichtigte keine veralteten deutschen PLZ-Formate mit alphabetischen Präfixen (Vorkriegs-/Vorwende-Format)</li>
-            <li><strong>Sofortige Minderung:</strong> Connector-Mapping-Override bereitgestellt — entfernt nicht-numerische Präfixe vor der Validierung</li>
-            <li><strong>Dauerhafte Behebung:</strong> Postleitzahlen-Parser aktualisiert zur Normalisierung von DACH-Eingaben; 127 Testvektoren für DE/AT/CH-PLZ-Formate hinzugefügt</li>
+            <li><strong>Ursache:</strong> Regex-Validierung in <code class="mono">MockAddressSanitizer.parseZone</code> erzwang ausschließlich 5-stellige US-ZIP-Codes (<code class="mono">^[0-9]{5}$</code>) und lehnte kanadische alphanumerische Postleitzahlen beim Checkout ab</li>
+            <li><strong>Sofortige Minderung:</strong> Connector-Mapping-Override bereitgestellt — normalisiert kanadische Postleitzahlenformate vor der Validierung</li>
+            <li><strong>Dauerhafte Behebung:</strong> Postleitzahlen-Parser aktualisiert zur Unterstützung von US-ZIP (+4) und kanadischen alphanumerischen Formaten; 127 Testvektoren für nordamerikanische Formate hinzugefügt</li>
             <li><strong>UAT-Verifizierung:</strong> 47 betroffene Konten in Staging erneut getestet — alle Transaktionen laufen fehlerfrei</li>
-            <li><strong>Dokumentation:</strong> Confluence-Connector-Leitfaden mit DACH-PLZ-Normalisierungsregeln und Postman-Collection zur Partnervalidierung aktualisiert</li>
+            <li><strong>Dokumentation:</strong> Confluence-Connector-Leitfaden mit US/Kanada-PLZ-Validierungsregeln und Postman-Collection zur Partnervalidierung aktualisiert</li>
             <li><strong>SLA-Ergebnis:</strong> In 42 Minuten behoben (Ziel: 60 Min.) — <span class="status-pill resolved">SLA eingehalten</span></li>
           </ul>
         </div>`
