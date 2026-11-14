@@ -27,3 +27,7 @@ dist/
 .env
 .env.*
 
+# Temporary git push script
+git_push.py
+
+
