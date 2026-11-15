@@ -50,9 +50,17 @@
 
       <!-- Right Actions -->
       <div class="nav-actions">
-        <div class="lang-switch" role="group" aria-label="Sprachauswahl">
-          <a href="../" class="lang-switch-btn" aria-label="Auf Englisch umschalten">EN</a>
-          <span class="lang-switch-btn active" aria-current="true">DE</span>
+        <div class="lang-switch-wrap">
+          <div class="lang-switch" role="group" aria-label="Sprachauswahl">
+            <a href="../" class="lang-switch-btn" aria-label="Auf Englisch umschalten">EN</a>
+            <span class="lang-switch-btn active" aria-current="true">DE</span>
+          </div>
+          <div class="lang-popup" id="lang-popup" role="tooltip" data-target="../">
+            <span class="lang-popup-icon">🌐</span>
+            <span class="lang-popup-text">Change to <strong>English</strong>?</span>
+            <span class="lang-popup-arrow">→</span>
+            <button class="lang-popup-close" aria-label="Schließen" type="button">&times;</button>
+          </div>
         </div>
         <button id="theme-toggle" class="nav-icon-btn" aria-label="Toggle theme">
           <!-- JS injects icon -->

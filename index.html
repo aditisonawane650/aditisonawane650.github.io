@@ -4,6 +4,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Automatic Language Detection -->
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('preferred_lang');
+        if (saved === 'en') return;
+
+        var browserLang = (navigator.languages && navigator.languages[0]) || navigator.language || '';
+        var isGerman = browserLang.toLowerCase().slice(0, 2) === 'de';
+
+        if (saved === 'de' || (!saved && isGerman)) {
+          window.location.replace('de/' + window.location.hash);
+        }
+      } catch (e) {
+        // Fallback gracefully if localStorage access is restricted
+      }
+    })();
+  </script>
+
   <title>Aditi Sonawane</title>
   <meta name="description"
     content="Aditi Sonawane is a Technical Product Engineer with 5+ years of experience resolving complex Tier-2/Tier-3 production incidents across ERP, CRM, and e-commerce ecosystems, specializing in API forensics, SQL investigation, and SLA governance.">
@@ -50,9 +70,17 @@
 
       <!-- Right Actions -->
       <div class="nav-actions">
-        <div class="lang-switch" role="group" aria-label="Language selector">
-          <span class="lang-switch-btn active" aria-current="true">EN</span>
-          <a href="de/" class="lang-switch-btn" aria-label="Switch to German">DE</a>
+        <div class="lang-switch-wrap">
+          <div class="lang-switch" role="group" aria-label="Language selector">
+            <span class="lang-switch-btn active" aria-current="true">EN</span>
+            <a href="de/" class="lang-switch-btn" aria-label="Switch to German">DE</a>
+          </div>
+          <div class="lang-popup" id="lang-popup" role="tooltip" data-target="de/">
+            <span class="lang-popup-icon">🌐</span>
+            <span class="lang-popup-text">Change to <strong>German</strong>?</span>
+            <span class="lang-popup-arrow">→</span>
+            <button class="lang-popup-close" aria-label="Close" type="button">&times;</button>
+          </div>
         </div>
         <button id="theme-toggle" class="nav-icon-btn" aria-label="Toggle theme">
           <!-- JS injects icon -->
